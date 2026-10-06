@@ -13,6 +13,10 @@ import VisualizationsHub from "./components/VisualizationsHub.jsx";
 import KpiExecutiveSuite from "./components/KpiExecutiveSuite.jsx";
 import AiCsvVisualizer from "./components/AiCsvVisualizer.jsx";
 import ThemeToggle from "./components/ThemeToggle.jsx";
+import AcademicSimulatorModal from "./components/AcademicSimulatorModal.jsx";
+import StudentDossierDrawer from "./components/StudentDossierDrawer.jsx";
+import CommandPalette from "./components/CommandPalette.jsx";
+import ErrorBoundary from "./ErrorBoundary.jsx";
 import {
   computeKpis,
   gpaByGrade,
@@ -54,6 +58,7 @@ import {
   BarChart3,
   FileSpreadsheet,
   Target,
+  Search,
 } from "lucide-react";
 
 const GRADE_COLORS = {
@@ -119,15 +124,32 @@ export default function Dashboard({
   filtered,
   activeTab: propActiveTab,
   setActiveTab: propSetActiveTab,
+  setFilters,
+  onResetFilters,
 }) {
   const [internalActiveTab, setInternalActiveTab] = useState("visualizations");
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
   const [agentQuestion, setAgentQuestion] = useState("");
 
   const activeTab = propActiveTab || internalActiveTab;
   const setActiveTab = propSetActiveTab || setInternalActiveTab;
 
   const kpis = useMemo(() => computeKpis(filtered), [filtered]);
+
+  // Global keyboard shortcut for Command Palette (Cmd+K / Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleAskAgentFromChart = (prompt) => {
     setAgentQuestion(prompt);
@@ -163,7 +185,7 @@ export default function Dashboard({
 
   return (
     <>
-      {/* Top Organization Header & Power BI Export Launch */}
+      {/* Top Organization Header & Action Launchers */}
       <div
         style={{
           display: "flex",
@@ -210,9 +232,68 @@ export default function Dashboard({
           })}
         </div>
 
-        {/* Action Controls: Theme Toggle & Export Center */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {/* Action Controls: Search, What-If Simulator, Theme Toggle & Export Center */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {/* Cmd+K Quick Search / Command Button */}
+          <button
+            type="button"
+            onClick={() => setIsCommandPaletteOpen(true)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "7px 12px",
+              borderRadius: "var(--radius-sm)",
+              background: "var(--surface-muted)",
+              border: "1px solid var(--border)",
+              color: "var(--text-secondary)",
+              fontSize: 12.5,
+              fontWeight: 500,
+              cursor: "pointer",
+            }}
+          >
+            <Search size={14} style={{ color: "var(--text-muted)" }} />
+            <span>Search / Commands</span>
+            <kbd
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                padding: "1px 5px",
+                borderRadius: 4,
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                color: "var(--text-muted)",
+              }}
+            >
+              ⌘K
+            </kbd>
+          </button>
+
+          {/* Interactive What-If Scenario Simulator Button */}
+          <button
+            type="button"
+            onClick={() => setIsSimulatorOpen(true)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "7px 13px",
+              borderRadius: "var(--radius-sm)",
+              background: "var(--accent-light)",
+              border: "1px solid var(--accent-border)",
+              color: "var(--accent)",
+              fontSize: 12.5,
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <Sparkles size={14} />
+            <span>What-If Simulator</span>
+          </button>
+
           <ThemeToggle />
+
           <button
             type="button"
             onClick={() => setIsExportOpen(true)}
@@ -231,7 +312,7 @@ export default function Dashboard({
           <p>Try adjusting or resetting the filters in the sidebar.</p>
         </div>
       ) : (
-        <>
+        <ErrorBoundary key={activeTab} resetKey={activeTab}>
           {activeTab === "visualizations" && (
             <VisualizationsHub
               data={filtered}
@@ -253,9 +334,10 @@ export default function Dashboard({
               data={filtered}
               kpis={kpis}
               onOpenExport={() => setIsExportOpen(true)}
+              onSelectStudent={(student) => setSelectedStudent(student)}
             />
           )}
-        </>
+        </ErrorBoundary>
       )}
 
       {/* Power BI & CSV Export Modal */}
@@ -264,6 +346,32 @@ export default function Dashboard({
         onClose={() => setIsExportOpen(false)}
         data={filtered}
         kpis={kpis}
+      />
+
+      {/* Interactive Academic Scenario Simulator Modal */}
+      <AcademicSimulatorModal
+        isOpen={isSimulatorOpen}
+        onClose={() => setIsSimulatorOpen(false)}
+        cohortData={filtered}
+      />
+
+      {/* 360° Student Profile Dossier Drawer */}
+      <StudentDossierDrawer
+        student={selectedStudent}
+        cohortData={data}
+        isOpen={Boolean(selectedStudent)}
+        onClose={() => setSelectedStudent(null)}
+      />
+
+      {/* Universal Command & Quick Action Palette (Cmd+K) */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        setActiveTab={setActiveTab}
+        onOpenSimulator={() => setIsSimulatorOpen(true)}
+        onOpenExport={() => setIsExportOpen(true)}
+        setFilters={setFilters}
+        onResetFilters={onResetFilters}
       />
     </>
   );
@@ -961,7 +1069,8 @@ function AgentTab({ data, initialQuestion, onClearInitialQuestion }) {
   );
 }
 
-function ExplorerTab({ data, kpis, onOpenExport }) {
+function ExplorerTab({ data, kpis, onOpenExport, onSelectStudent }) {
+  const [searchTerm, setSearchTerm] = useState("");
   const columns = [
     "StudentID",
     "Age",
@@ -980,32 +1089,75 @@ function ExplorerTab({ data, kpis, onOpenExport }) {
     "GradeClass",
   ];
 
+  const filteredData = useMemo(() => {
+    if (!searchTerm.trim()) return data;
+    const q = searchTerm.toLowerCase().trim();
+    return data.filter(
+      (r) =>
+        String(r.StudentID).includes(q) ||
+        String(r.GradeClass).toLowerCase().includes(q) ||
+        String(r.Gender).toLowerCase().includes(q) ||
+        String(r.Ethnicity).toLowerCase().includes(q)
+    );
+  }, [data, searchTerm]);
+
   return (
     <>
-      <div className="section-title">Data Explorer & Power BI Export Hub</div>
+      <div className="section-title">Data Explorer & Student Dossier Hub</div>
       <div className="section-caption">
-        Inspect granular micro-data records and export formatted models directly into Microsoft Power BI Desktop or CSV spreadsheets.
+        Inspect granular micro-data records, view interactive 360° student dossiers, and export formatted models directly into Microsoft Power BI Desktop or CSV spreadsheets.
       </div>
 
       <div className="data-explorer">
-        {/* Quick Action Toolbar */}
+        {/* Quick Action Toolbar with Search and Exports */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: 16,
+            marginBottom: 14,
             flexWrap: "wrap",
-            gap: 10,
-            background: "#F8FAFC",
+            gap: 12,
+            background: "var(--surface-muted)",
             padding: "12px 16px",
             borderRadius: 10,
-            border: "1px solid #E2E8F0",
+            border: "1px solid var(--border)",
           }}
         >
-          <div style={{ fontSize: 13, color: "#334155" }}>
-            Showing <strong>{Math.min(500, data.length).toLocaleString()}</strong> of{" "}
-            <strong>{data.length.toLocaleString()}</strong> filtered student records.
+          {/* Real-time Student Search Input */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 260 }}>
+            <div style={{ position: "relative", width: "100%", maxWidth: 360 }}>
+              <Search
+                size={14}
+                style={{
+                  position: "absolute",
+                  left: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "var(--text-muted)",
+                }}
+              />
+              <input
+                type="text"
+                placeholder="Search by Student ID, Grade (A-F), Gender..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "7px 10px 7px 30px",
+                  borderRadius: 6,
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
+                  color: "var(--text-primary)",
+                  fontSize: 12.5,
+                  outline: "none",
+                }}
+              />
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+              Showing <strong>{Math.min(500, filteredData.length).toLocaleString()}</strong> of{" "}
+              <strong>{data.length.toLocaleString()}</strong> students
+            </div>
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -1013,7 +1165,7 @@ function ExplorerTab({ data, kpis, onOpenExport }) {
               type="button"
               className="download-btn"
               style={{ margin: 0 }}
-              onClick={() => downloadCsv(data, "filtered_student_performance.csv")}
+              onClick={() => downloadCsv(filteredData, "filtered_student_performance.csv")}
             >
               <Download size={14} />
               Export Standard CSV
@@ -1022,7 +1174,7 @@ function ExplorerTab({ data, kpis, onOpenExport }) {
               type="button"
               className="download-btn"
               style={{ margin: 0, background: "#D97706" }}
-              onClick={() => downloadPowerBiCsv(data)}
+              onClick={() => downloadPowerBiCsv(filteredData)}
             >
               <FileSpreadsheet size={14} />
               Export Power BI Model (.csv)
@@ -1039,6 +1191,27 @@ function ExplorerTab({ data, kpis, onOpenExport }) {
           </div>
         </div>
 
+        {/* Informative Interaction Callout */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "8px 12px",
+            marginBottom: 12,
+            background: "var(--surface-muted)",
+            border: "1px solid var(--border)",
+            borderRadius: 6,
+            fontSize: 12,
+            color: "var(--text-secondary)",
+          }}
+        >
+          <Sparkles size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />
+          <span>
+            <strong>Interactive Feature:</strong> Click any student row below to inspect their <strong>360° Profile Dossier</strong>, percentile ranking, risk diagnostics, and AI Counselor Action Plan.
+          </span>
+        </div>
+
         {/* Granular Data Table */}
         <div className="data-table-wrapper">
           <table className="data-table">
@@ -1047,20 +1220,82 @@ function ExplorerTab({ data, kpis, onOpenExport }) {
                 {columns.map((col) => (
                   <th key={col}>{col}</th>
                 ))}
+                <th style={{ textAlign: "center", minWidth: 100 }}>Action</th>
               </tr>
             </thead>
             <tbody>
-              {data.slice(0, 500).map((row, i) => (
-                <tr key={row.StudentID || i}>
+              {filteredData.slice(0, 500).map((row, i) => (
+                <tr
+                  key={row.StudentID || i}
+                  onClick={() => onSelectStudent && onSelectStudent(row)}
+                  style={{ cursor: "pointer", transition: "background 0.15s ease" }}
+                  className="table-student-row"
+                >
                   {columns.map((col) => (
                     <td key={col}>
-                      {typeof row[col] === "number"
-                        ? Number.isInteger(row[col])
-                          ? row[col]
-                          : row[col].toFixed(2)
-                        : row[col]}
+                      {col === "GradeClass" ? (
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            padding: "2px 6px",
+                            borderRadius: 4,
+                            background:
+                              row.GradeClass === "A"
+                                ? "#ECFDF5"
+                                : row.GradeClass === "B"
+                                ? "#F0F9FF"
+                                : row.GradeClass === "C"
+                                ? "#FFFBEB"
+                                : row.GradeClass === "D"
+                                ? "#FFF7ED"
+                                : "#FEF2F2",
+                            color:
+                              row.GradeClass === "A"
+                                ? "#059669"
+                                : row.GradeClass === "B"
+                                ? "#0284C7"
+                                : row.GradeClass === "C"
+                                ? "#D97706"
+                                : row.GradeClass === "D"
+                                ? "#EA580C"
+                                : "#DC2626",
+                          }}
+                        >
+                          {row.GradeClass}
+                        </span>
+                      ) : typeof row[col] === "number" ? (
+                        Number.isInteger(row[col]) ? (
+                          row[col]
+                        ) : (
+                          row[col].toFixed(2)
+                        )
+                      ) : (
+                        row[col]
+                      )}
                     </td>
                   ))}
+                  <td style={{ textAlign: "center" }}>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectStudent && onSelectStudent(row);
+                      }}
+                      style={{
+                        padding: "3px 8px",
+                        borderRadius: 4,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        background: "var(--accent-light)",
+                        color: "var(--accent)",
+                        border: "1px solid var(--accent-border)",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      360° Dossier ↗
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
