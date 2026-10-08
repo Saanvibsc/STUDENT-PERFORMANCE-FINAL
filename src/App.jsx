@@ -106,12 +106,14 @@ export default function App() {
             {data.length.toLocaleString()} students. All charts update in
             real-time when cohort filters change.
           </div>
-          <ErrorBoundary>
+          <ErrorBoundary key={activeTab} resetKey={activeTab}>
             <Dashboard
               data={data}
               filtered={filtered}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
+              setFilters={setFilters}
+              onResetFilters={handleReset}
             />
           </ErrorBoundary>
         </div>

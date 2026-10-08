@@ -131,6 +131,48 @@ textarea {
   background: var(--text-muted);
 }
 
+/* Sidebar Filter Scroll Bar */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--border-hover);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* When you drag the filter scroll bar, it keeps on changing colors */
+.sidebar::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #2563EB, #06B6D4, #10B981, #F59E0B, #EC4899, #8B5CF6, #2563EB);
+  background-size: 100% 300%;
+  animation: filterScrollColorShift 2.5s linear infinite;
+}
+
+/* Dynamic continuous color-shifting animation when dragging */
+@keyframes filterScrollColorShift {
+  0% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: hue-rotate(180deg);
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: hue-rotate(360deg);
+  }
+}
+
 .app-container {
   display: flex;
   min-height: 100vh;
@@ -281,8 +323,7 @@ textarea {
   margin-bottom: 4px;
 }
 
-.filter-group select,
-.filter-group input[type="range"] {
+.filter-group select {
   width: 100%;
   padding: 6px 9px;
   background: var(--surface-muted);
@@ -301,6 +342,110 @@ textarea {
 .filter-group select option {
   background: var(--surface);
   color: var(--text-primary);
+}
+
+/* Range Slider / Scroll Bar in Filter */
+.filter-group input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 9999px;
+  outline: none;
+  padding: 0;
+  margin: 8px 0 4px;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Track styling - Webkit (Chrome / Edge / Safari) */
+.filter-group input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--border);
+  transition: background 0.2s ease;
+}
+
+/* When dragged: the track in front keeps on changing colors */
+.filter-group input[type="range"]:active::-webkit-slider-runnable-track {
+  background: linear-gradient(90deg, #2563EB, #06B6D4, #10B981, #F59E0B, #EC4899, #8B5CF6, #2563EB);
+  background-size: 300% 100%;
+  animation: filterScrollColorShift 2.5s linear infinite;
+}
+
+/* Track styling - Firefox */
+.filter-group input[type="range"]::-moz-range-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--border);
+  border: none;
+  transition: background 0.2s ease;
+}
+
+.filter-group input[type="range"]:active::-moz-range-track {
+  background: linear-gradient(90deg, #2563EB, #06B6D4, #10B981, #F59E0B, #EC4899, #8B5CF6, #2563EB);
+  background-size: 300% 100%;
+  animation: filterScrollColorShift 2.5s linear infinite;
+}
+
+/* Thumb styling - Webkit */
+.filter-group input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  margin-top: -5px;
+  cursor: grab;
+  transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filter-group input[type="range"]:hover::-webkit-slider-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* When you drag it: the thumb keeps changing colors with a dynamic halo */
+.filter-group input[type="range"]:active::-webkit-slider-thumb {
+  cursor: grabbing;
+  transform: scale(1.25);
+  background: linear-gradient(135deg, #2563EB, #06B6D4, #8B5CF6, #EC4899, #F59E0B, #2563EB);
+  background-size: 300% 300%;
+  animation: filterScrollColorShift 2.5s linear infinite;
+  box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.25), 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Thumb styling - Firefox */
+.filter-group input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  cursor: grab;
+  transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filter-group input[type="range"]:hover::-moz-range-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.filter-group input[type="range"]:active::-moz-range-thumb {
+  cursor: grabbing;
+  transform: scale(1.25);
+  background: linear-gradient(135deg, #2563EB, #06B6D4, #8B5CF6, #EC4899, #F59E0B, #2563EB);
+  background-size: 300% 300%;
+  animation: filterScrollColorShift 2.5s linear infinite;
+  box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.25), 0 3px 8px rgba(0, 0, 0, 0.3);
 }
 
 .range-display {
@@ -1127,3 +1272,20 @@ textarea {
     flex-direction: column;
   }
 }
+
+/* 360° Student Dossier & Interactive Features */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.table-student-row:hover td {
+  background-color: var(--surface-muted) !important;
+}
+
